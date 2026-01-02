@@ -1,0 +1,89 @@
+org: valenzoia
+service: books-crud
+
+provider:
+    name: aws
+    region: us-east-1
+    runtime: nodejs20.x
+    iam:
+        role:
+            statements:
+                - Effect: Allow
+                  Action:
+                      - dynamodb:Query
+                      - dynamodb:Scan
+                      - dynamodb:GetItem
+                      - dynamodb:PutItem
+                      - dynamodb:UpdateItem
+                      - dynamodb:DeleteItem
+                  Resource:
+                      - Fn::GetAtt: [BooksTable, Arn]
+    environment:
+        BOOKS_TABLE: ${self:custom.tableName}
+
+functions:
+    createBook:
+        handler: dist/infrastructure/lambda/handlers/createBookHandler.createBookHandler
+        events:
+            - http:
+                  path: /books
+                  method: post
+                  cors: true
+
+    getBookById:
+        handler: dist/infrastructure/lambda/handlers/getBookByIdHandler.getBookByIdHandler
+        events:
+            - http:
+                  path: /books/{id}
+                  method: get
+                  cors: true
+
+resources:
+    Resources:
+        BooksTable:
+            Type: AWS::DynamoDB::Table
+            Properties:
+                AttributeDefinitions:
+                    - AttributeName: id
+                      AttributeType: S
+                KeySchema:
+                    - AttributeName: id
+                      KeyType: HASH
+                BillingMode: PAY_PER_REQUEST
+                TableName: ${self:custom.tableName}
+
+custom:
+    localstack:
+        stages:
+            # list of stages for which the plugin should be enabled
+            - local
+        host: http://localhost # optional - LocalStack host to connect to
+        edgePort: 4566 # optional - LocalStack edge port to connect to
+        autostart: true # optional - Start LocalStack in Docker on Serverless deploy
+        networks: #optional - attaches the list of networks to the localstack docker container after startup
+            - host
+            - overlay
+            - my_custom_network
+        lambda:
+            # Enable this flag to improve performance
+            mountCode: true # specify either "true", or a relative path to the root Lambda mount path
+        docker:
+            # Enable this flag to run "docker ..." commands as sudo
+            sudo: False
+            compose_file: /home/localstack_compose.yml # optional to use docker compose instead of docker or localstack cli
+    tableName: books-table-${sls:stage}
+    serverless-offline:
+        httpPort: 3000
+    esbuild:
+        bundle: true
+        minify: false
+        sourcemap: true
+        exclude: ['aws-sdk']
+        target: 'node20'
+        define: { 'require.resolve': undefined }
+        platform: 'node'
+        concurrency: 10
+
+plugins:
+    - serverless-offline
+    - serverless-localstack
