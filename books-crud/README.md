@@ -1,6 +1,6 @@
 # Books CRUD - Hexagonal Architecture
 
-## 📁 Estructura del Proyecto
+##  Estructura del Proyecto
 
 ```
 src/
@@ -31,7 +31,7 @@ src/
     └── database/            # Database setup
 ```
 
-## 🚀 Commands
+##  Commands
 
 ```bash
 # Development with serverless offline
